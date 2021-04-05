@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
   db:
@@ -10,16 +10,32 @@ services:
     env_file:
       - db.env
 
+  redis:
+    image: redis:alpine
+    restart: always
+
   app:
-    image: nextcloud:21.0
+    image: "nextcloud:${TAG}"
     restart: always
     ports:
       - 8085:80
-    links:
-      - db
     volumes:
       - /tank/nextcloud_docker/data:/var/www/html
     environment:
       - MYSQL_HOST=db
+      - REDIS_HOST=redis
     env_file:
       - db.env
+    depends_on:
+      - db
+      - redis
+
+  cron:
+    image: "nextcloud:${TAG}"
+    restart: always
+    volumes:
+      - /tank/nextcloud_docker/data:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
