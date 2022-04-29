@@ -5,10 +5,11 @@
 _inactive/
 
 # service volume mounts
-mediastack/*
-mailcow/*
 crowdsec/crowdsec-config/
 crowdsec/crowdsec-db/
+gitlab-runner/config/
+mailcow/*
+mediastack/*
 mkdocs/files/
 mumble/data/
 muse/data/
