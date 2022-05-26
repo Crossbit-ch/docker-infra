@@ -1,3 +1,24 @@
+# env files contain sensitive information
 *.env
+
+# all inactive services
+_inactive/
+
+# service volume mounts
 mediastack/*
 mailcow/*
+crowdsec/crowdsec-config/
+crowdsec/crowdsec-db/
+mkdocs/files/
+mumble/data/
+muse/data/
+nginx_crossbit/config/
+openvpn/*
+portainer/portainer_data/
+pterodactyl/panel/srv/
+pterodactyl/wings/*
+subset-www/
+traefik/data/
+uptime-kuma/data/
+vscode/*
+wireguard/config/
