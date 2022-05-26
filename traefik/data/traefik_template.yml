@@ -1,0 +1,62 @@
+# Traefik static configuration file (/etc/traefik/traefik.yml)
+# See https://doc.traefik.io/traefik/getting-started/configuration-overview/#the-static-configuration
+# and https://doc.traefik.io/traefik/reference/static-configuration/cli/
+
+api:
+  dashboard: true                             # Enable the dashboard
+  debug: true
+# Certificate Resolvers are responsible for retrieving certificates from an ACME server
+# See https://doc.traefik.io/traefik/https/acme/#certificate-resolvers
+certificatesResolvers:
+  infomaniak:                                 
+    acme:
+      email: your-email
+      storage: acme.json
+      dnsChallenge:
+        provider: infomaniak                  # Change provider and resolvers accordingly 
+        resolvers:
+          - "nsany1.infomaniak.com"
+          - "nsany2.infomaniak.com"
+  le:
+    acme:
+      email: your-email
+      storage: acme-le.json
+      httpChallenge:
+        entryPoint: http
+
+entryPoints:
+  http:
+    address: ":80"                            # Create the HTTP entrypoint on port 80
+    http:
+      middlewares:
+        - crowdsec-bouncer@file               # Force to use Crowdsec bouncer for every HTTP Request
+      redirections:                           # HTTPS redirection (80 to 443)
+        entryPoint:
+          to: "https"                         # The target element
+          scheme: "https"                     # The redirection target scheme
+          permanent: true                     # Set permanent redirect, Code 301
+  https:
+    address: ":443"                           # Create the HTTPS entrypoint on port 443
+    http:
+      middlewares:
+        - crowdsec-bouncer@file               # Force to use Crowdsec bouncer for every HTTPS Request
+serversTransport:
+  insecureSkipVerify: true
+global:
+  checknewversion: true                       # Periodically check if a new version has been released.
+  sendanonymoususage: true                    # Periodically send anonymous usage statistics.
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"   # Listen to the UNIX Docker socket
+    exposedByDefault: false                   # Only expose container that are explicitly enabled (using label traefik.enabled)
+    network: "proxy"                          # Default network to use for connections to all containers.
+  file:
+    filename: "/config.yml"                   # Link to the dynamic configuration
+    watch: true                               # Watch for modifications
+  providersThrottleDuration: 10               # Configuration reload frequency
+accessLog:                                    # Enable Accesslog, mount in /var/log
+  filePath: "/log/access.log"                 # Set path in Docker container
+log:                                          # This log concerns general Traefik 
+  level: INFO                                 # Set loglevel, see: https://doc.traefik.io/traefik/master/observability/logs/#configuration
+  filePath: "/log/traefik.log"                # Set path in Docker container
