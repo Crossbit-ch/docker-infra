@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - "INFOMANIAK_ACCESS_TOKEN=${INFOMANIAK_ACCESS_TOKEN}"
+      - "INFOMANIAK_TTL=300"
+      - "INFOMANIAK_PROPAGATION_TIMEOUT=300"
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./data/traefik.yml:/traefik.yml:ro"
+      - "./data/acme.json:/acme.json"
+      - "./data/acme-le.json:/acme-le.json"
+      - "./data/config.yml:/config.yml"
+      - "/var/log/traefik/:/log/"
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed, service name label is missing due to special one for traefik
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=traefikAuth@file,default@file,internal-access@file"                # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=modern@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
+
+      # Specific Traefik container labels, do not copy to other containers
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=api@internal"                                                          # Special service name for traefik
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.certresolver=infomaniak"                                                   # We're using Infomaniak as a cert authority
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[0].main=crossbit.ch"                                               # Set crossbit main cert 
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[0].sans=*.crossbit.ch"                                             # Set crossbit sans cert(s)
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].main=local.crossbit.ch"                                         # Set local.crossbit main cert 
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].sans=*.local.crossbit.ch"                                       # Set local.crossbit sans cert(s)
+networks:
+  proxy:
+    external: true
