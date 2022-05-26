@@ -1,0 +1,94 @@
+version: '3.8'
+x-common:
+  database:
+    &db-environment
+    # Do not remove the "&db-password" from the end of the line below, it is important
+    # for Panel functionality.
+    MYSQL_PASSWORD: &db-password "${MYSQL_PASSWORD}"
+    MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+  panel:
+    &panel-environment
+    APP_URL: "${APP_URL}"
+    # A list of valid timezones can be found here: http://php.net/manual/en/timezones.php
+    APP_TIMEZONE: "Europe/Zurich"
+    APP_SERVICE_AUTHOR: "${APP_SERVICE_AUTHOR}"
+    TRUSTED_PROXIES: "*" # Set this to your proxy IP
+    
+  mail:
+    &mail-environment
+    MAIL_FROM: "${MAIL_FROM}"
+    MAIL_DRIVER: "${MAIL_DRIVER}"
+    MAIL_HOST: "${MAIL_HOST}"
+    MAIL_PORT: "${MAIL_PORT}"
+    MAIL_USERNAME: "${MAIL_USERNAME}"
+    MAIL_PASSWORD: "${MAIL_PASSWORD}"
+    MAIL_ENCRYPTION: "true"
+
+#
+# ------------------------------------------------------------------------------------------
+# DANGER ZONE BELOW
+#
+# The remainder of this file likely does not need to be changed. Please only make modifications
+# below if you understand what you are doing.
+#
+services:
+  database:
+    image: mariadb:10.5
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./srv/pterodactyl/database:/var/lib/mysql
+    environment:
+      <<: *db-environment
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+  cache:
+    image: redis:alpine
+    restart: always
+  panel:
+    image: ghcr.io/pterodactyl/panel:latest
+    restart: unless-stopped
+    networks:
+      - proxy
+      - default
+    links:
+      - database
+      - cache
+    volumes:
+      - ./srv/pterodactyl/var/:/app/var/
+      - ./srv/pterodactyl/nginx/:/etc/nginx/http.d/
+      - ./srv/pterodactyl/certs/:/etc/letsencrypt/
+      - ./srv/pterodactyl/logs/:/app/storage/logs
+    environment:
+      <<: [*panel-environment, *mail-environment]
+      DB_PASSWORD: *db-password
+      APP_ENV: "production"
+      APP_ENVIRONMENT_ONLY: "false"
+      CACHE_DRIVER: "redis"
+      SESSION_DRIVER: "redis"
+      QUEUE_DRIVER: "redis"
+      REDIS_HOST: "cache"
+      DB_HOST: "database"
+      DB_PORT: "3306"
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"                           # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
+
+networks:
+  proxy:
+    external: true
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
