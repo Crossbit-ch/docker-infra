@@ -187,6 +187,30 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE_6}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE_6}.loadbalancer.server.port=9696"                                                      # Set loadbalancing Port and corresponding Service name
 
+  homarr:
+    image: ghcr.io/ajnart/homarr:latest
+    container_name: homarr_mediastack
+    restart: unless-stopped
+    volumes:
+      - ./homarr/configs:/app/data/configs
+      - ./homarr/icons:/app/public/icons
+    networks:
+      - proxy
+      - default
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.service=${TRAEFIK_SERVICE_7}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_7}.${TRAEFIK_SUBDOMAIN_7}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_7}.loadbalancer.server.port=7575"                                                       # Set loadbalancing Port and corresponding Service name
+        
 
 networks:
   proxy:
