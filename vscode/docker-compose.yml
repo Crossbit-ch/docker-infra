@@ -1,0 +1,40 @@
+---
+version: "2.1"
+services:
+  code-server:
+    image: ghcr.io/linuxserver/code-server
+    container_name: code-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    # - FILE_PASSWORD= "${PASSWORD}"
+      - FILE_HASHED_PASSWORD="${HASHED_PASSWORD}"
+      - FILE_SUDO_PASSWORD="${SUDO_PASSWORD}"
+    # - FILE_SUDO_PASSWORD_HASH= "${SUDO_PASSWORD_HASH}"
+      - PROXY_DOMAIN="${PROXY_DOMAIN}"
+    volumes:
+      - ./config:/config
+      - ./projects:/config/workspace/
+      - ../mkdocs/files:/config/workspace/mkdocs
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"                           # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=modern@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=8443"                                                # Set loadbalancing Port and corresponding Service name
+     
+networks:
+  proxy:
+    external: true
+
