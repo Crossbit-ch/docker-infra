@@ -1,0 +1,24 @@
+version: "3.4"
+services:
+  obfs4-bridge:
+    image: thetorproject/obfs4-bridge:latest
+    environment:
+      # Exit with an error message if OR_PORT is unset or empty.
+      - OR_PORT=${OR_PORT:?Env var OR_PORT is not set.}
+      # Exit with an error message if PT_PORT is unset or empty.
+      - PT_PORT=${PT_PORT:?Env var PT_PORT is not set.}
+      # Exit with an error message if EMAIL is unset or empty.
+      - EMAIL=${EMAIL:?Env var EMAIL is not set.}
+    env_file:
+      - .env
+    volumes:
+      - data:/var/lib/tor
+   # Port binding are disabled due to network_mode: host
+  # ports:
+    # - ${OR_PORT}:${OR_PORT}
+    # - ${PT_PORT}:${PT_PORT}
+    restart: unless-stopped
+    network_mode: host
+volumes:
+  data:
+    name: tor-datadir-${OR_PORT}-${PT_PORT}
