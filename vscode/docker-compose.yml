@@ -7,7 +7,7 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
+      - TZ=Europe/Zurich
     # - FILE_PASSWORD= "${PASSWORD}"
       - FILE_HASHED_PASSWORD="${HASHED_PASSWORD}"
       - FILE_SUDO_PASSWORD="${SUDO_PASSWORD}"
