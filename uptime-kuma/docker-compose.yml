@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+    uptime-kuma:
+        restart: unless-stopped
+        networks:
+          - proxy
+        volumes:
+            - ./data:/app/data
+        container_name: uptime-kuma
+        image: louislam/uptime-kuma:1
+        labels:
+          - "traefik.docker.network=proxy"
+          - "traefik.enable=true"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"
+          - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=3001"
+
+          - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.certresolver=le"
+
+networks:
+  proxy:
+    external: true
