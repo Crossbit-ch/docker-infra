@@ -1,0 +1,14 @@
+version: '3.3'
+services:
+    mumble-server:
+        image: mumblevoip/mumble-server:latest
+        ports:
+            - '64738:64738/tcp'
+            - '64738:64738/udp'
+        container_name: mumble-server
+        volumes:
+            - ./data:/data
+        environment:
+            - PUID=1000
+            - PGID=1000
+        restart: unless-stopped
