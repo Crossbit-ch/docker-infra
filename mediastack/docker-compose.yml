@@ -1,0 +1,167 @@
+version: "2.4"
+services:
+  jellyfin:
+    image: ghcr.io/linuxserver/jellyfin
+    container_name: jellyfin_mediastack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+        #- JELLYFIN_PublishedServerUrl=192.168.1.127 #optional
+    volumes:
+      - ./jellyfin/config:/config
+      - ./radarr/data:/data/movies
+      - ./sonarr/data:/data/series
+    networks:
+      - proxy
+      - default
+    ports:
+      - 8920:8920 #optional
+      - 7359:7359/udp #optional
+      - 1900:1900/udp #optional
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                         # Set Traefik network
+      - "traefik.enable=true"                                                                                                  # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.entrypoints=https"                                                          # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls=true"                                                                   # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.service=${TRAEFIK_SERVICE_1}"                                               # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.middlewares=default@file"                                                   # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.rule=Host(`${TRAEFIK_SUBDOMAIN_1}.${TRAEFIK_DOMAIN}`)"                      # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls.options=intermediate@file"                                              # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_1}.loadbalancer.server.port=8096"                                             # Set loadbalancing Port and corresponding Service name
+
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission_mediastack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
+      - WHITELIST=
+      - HOST_WHITELIST=
+    volumes:
+      - ./transmission/config/:/config
+      - ./transmission/:/downloads
+      - ./transmission/watch/:/watch
+      - /tmp/transmission/:/tmp_downloads/
+    networks: 
+      - proxy
+      - default
+    ports:
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.service=${TRAEFIK_SERVICE_2}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_2}.${TRAEFIK_SUBDOMAIN_2}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_2}.loadbalancer.server.port=9091"                                                      # Set loadbalancing Port and corresponding Service name
+
+  sonarr:
+    image: linuxserver/sonarr:0.6.1342
+    container_name: sonarr_mediastack
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London # Specify a timezone to use
+    volumes:
+      - ./sonarr/data:/data # Location of all your media
+      - ./sonarr/config:/config # Contains all relevant configuration files.
+      - ./transmission:/downloads
+    networks:
+      - proxy
+      - default
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.service=${TRAEFIK_SERVICE_3}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_3}.${TRAEFIK_SUBDOMAIN_3}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_3}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_3}.loadbalancer.server.port=8989"                                                      # Set loadbalancing Port and corresponding Service name
+
+
+  radarr:
+    image: lscr.io/linuxserver/radarr
+    container_name: radarr_mediastack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ./radarr/data:/data
+      - ./radarr/config:/config
+      - ./transmission:/downloads #optional
+    networks:
+      - proxy
+      - default
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.service=${TRAEFIK_SERVICE_4}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_4}.${TRAEFIK_SUBDOMAIN_4}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_4}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_4}.loadbalancer.server.port=7878"                                                      # Set loadbalancing Port and corresponding Service name
+
+
+  jackett:
+    image: lscr.io/linuxserver/jackett
+    container_name: jackett_mediastack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - AUTO_UPDATE=true #optional
+    volumes:
+      - ./jackett/config:/config
+      - ./transmission:/downloads
+    networks:
+      - proxy
+      - default
+    restart: unless-stopped
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.service=${TRAEFIK_SERVICE_5}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_5}.${TRAEFIK_SUBDOMAIN_5}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_5}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_5}.loadbalancer.server.port=9117"                                                      # Set loadbalancing Port and corresponding Service name
+
+
+networks:
+  proxy:
+    external: true
+
