@@ -2,11 +2,14 @@ version: "3"
 
 services:
   db:
-    image: mariadb
+    image: mariadb:10.5
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
     restart: always
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     volumes:
-      - /tank/nextcloud_docker/db:/var/lib/mysql
+      - /tank/nextcloud/db_data:/var/lib/mysql
+      - /tank/nextcloud/db_config:/etc/mysql/conf.d
     env_file:
       - db.env
 
@@ -16,26 +19,91 @@ services:
 
   app:
     image: "nextcloud:${TAG}"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
     restart: always
-    ports:
-      - 8085:80
+    networks:
+      - proxy
+      - default
     volumes:
-      - /tank/nextcloud_docker/data:/var/www/html
+      - /tank/nextcloud/nextcloud_data:/var/www/html
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
+      - TZ=Europe/Zurich
+      - TRUSTED_PROXIES=172.26.0.0/16
+      - OVERWRITEPROTOCOL=https
+
     env_file:
       - db.env
     depends_on:
       - db
       - redis
 
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"                           # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
+
+      # Special Nextcloud labels
+      - "traefik.http.middlewares.${TRAEFIK_SERVICE}.redirectregex.regex=https://(.*)/.well-known/(card|cal)dav"
+      - "traefik.http.middlewares.${TRAEFIK_SERVICE}.redirectregex.replacement=https://$$1/remote.php/dav/"
+      - "traefik.http.middlewares.${TRAEFIK_SERVICE}.redirectregex.permanent=true"
   cron:
     image: "nextcloud:${TAG}"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
     restart: always
     volumes:
-      - /tank/nextcloud_docker/data:/var/www/html
+      - /tank/nextcloud/nextcloud_data:/var/www/html
     entrypoint: /cron.sh
     depends_on:
       - db
       - redis
+
+  code:
+    image: collabora/code
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - aliasgroup1=https://drive.crossbit.ch,https://drive.internal.crossbit.ch
+      - 'dictionaries=en_US,de_DE'
+      - VIRTUAL_PROTO=http
+      - VIRTUAL_PORT=9980
+      - VIRTUAL_HOST=${COLLABORA_FQDN}
+      - username=qVeJlaE0c9f5ZByCYNOcC8170XlKYVhPe1jyWPFaAyVN6JKgF7PdZCDzBBaxAlivjozfjYyk5COPVhlTLGw1RQit1ZYz2rn     
+      - password=dwtahFsCS2AmTL8RLfz2OREF9u8ygjgfFJKNwNPyeGu7Rdsz99Q2lSPcS2puCfMrrxffof70w7zi4H411g9gtaO5VBgn3fT         
+      - "extra_params=--o:ssl.enable=false  --o:ssl.termination=true"
+    cap_add:
+      - MKNOD
+    tty: true
+
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.entrypoints=https"                                                           # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.tls=true"                                                                    # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.service=${TRAEFIK_SERVICE_2}"                                                # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.middlewares=default@file"                                                    # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.rule=Host(`${TRAEFIK_SUBDOMAIN_2}.${TRAEFIK_DOMAIN}`)"                       # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_2}.tls.options=intermediate@file"                                               # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_2}.loadbalancer.server.port=9980"                                              # Set loadbalancing Port and corresponding Service name
+
+networks:
+  proxy:
+    external: true
+ 
+
