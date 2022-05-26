@@ -1,0 +1,109 @@
+version: '2.1'
+
+services:
+    nginx-mailcow:
+      networks:
+        proxy:
+      labels:
+        # Default labels, no changes needed
+        - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+        - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+        # These labels can or should be changed
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${MAILCOW_HOSTNAME}`)"                                              # Set FQDN(s) of website, taken from Mailcow .env for dynamic updates
+        - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+        - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=${HTTP_PORT}"                                        # Set loadbalancing Port and corresponding Service name, taken from Mailcow .env for dynamic updates
+
+        # Disable Watchtower
+        - "com.centurylinklabs.watchtower.enable=false"
+
+    unbound-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    mysql-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    redis-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    clamd-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    rspamd-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    php-fpm-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    sogo-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    dovecot-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    postfix-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    memcached-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    acme-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    netfilter-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    watchdog-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    dockerapi-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    solr-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    olefy-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    ofelia-mailcow:
+      labels:
+        com.centurylinklabs.watchtower.enable: "false"
+
+    certdumper:
+        image: humenius/traefik-certs-dumper
+        network_mode: none
+        volumes:
+          # mount the folder which contains Traefik's `acme.json' file
+          #   in this case Traefik is started from its own docker-compose in ../traefik
+          - ../traefik/data:/traefik:ro
+          # mount mailcow's SSL folder
+          - ./data/assets/ssl/:/output:rw
+        restart: always
+        environment:
+          # only change this, if you're using another domain for mailcow's web frontend compared to the standard config
+          - DOMAIN=${MAILCOW_HOSTNAME}
+
+networks:
+  proxy:
+    external: true
+
