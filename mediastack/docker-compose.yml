@@ -22,17 +22,31 @@ services:
     restart: unless-stopped
     labels:
       # Default labels, no changes needed
-      - "traefik.docker.network=proxy"                                                                                         # Set Traefik network
-      - "traefik.enable=true"                                                                                                  # Enable Traefik on this Docker Container
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.entrypoints=https"                                                          # Set entrypoint to HTTPS
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls=true"                                                                   # Enable TLS, we're on HTTPS
+      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
+      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls=true"                                                                            # Enable TLS, we're on HTTPS
       
       # These labels can or should be changed
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.service=${TRAEFIK_SERVICE_1}"                                               # Set service name
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.middlewares=default@file"                                                   # Set enabled middlewares provided trough dynamic configuration
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.rule=Host(`${TRAEFIK_SUBDOMAIN_1}.${TRAEFIK_DOMAIN}`)"                      # Set FQDN(s) of website
-      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls.options=intermediate@file"                                              # Set enabled TLS options provided trough dynamic configuration 
-      - "traefik.http.services.${TRAEFIK_SERVICE_1}.loadbalancer.server.port=8096"                                             # Set loadbalancing Port and corresponding Service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.service=${TRAEFIK_SERVICE_1}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.middlewares=default@file"                                                            # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.rule=Host(`${TRAEFIK_SUBDOMAIN_1}.${TRAEFIK_DOMAIN}`)"                               # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_1}.tls.options=intermediate@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_1}.loadbalancer.server.port=8096"                                                      # Set loadbalancing Port and corresponding Service name
+
+      #########################################################################################################################################################
+      # Looks like WebOS doesn't support the default security headers, this is a seperate router for internal, webOS access only, without the default headers.#
+      #########################################################################################################################################################
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls=true"                                                                            # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.service=${TRAEFIK_SERVICE_7}"                                                        # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.middlewares=internal-access@file"                                                    # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_7}.${TRAEFIK_SUBDOMAIN_7}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls.options=intermediate@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE_7}.loadbalancer.server.port=8096"                                                      # Set loadbalancing Port and corresponding Service name
+
 
   transmission:
     image: ghcr.io/linuxserver/transmission:latest
