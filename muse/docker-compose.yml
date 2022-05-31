@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   muse:
-          image: codetheweb/muse:latest
+    image: codetheweb/muse:latest
     restart: unless-stopped
     volumes:
       - ./data:/data
