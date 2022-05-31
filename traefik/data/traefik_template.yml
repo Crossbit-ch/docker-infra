@@ -28,8 +28,6 @@ entryPoints:
   http:
     address: ":80"                            # Create the HTTP entrypoint on port 80
     http:
-      middlewares:
-        - crowdsec-bouncer@file               # Force to use Crowdsec bouncer for every HTTP Request
       redirections:                           # HTTPS redirection (80 to 443)
         entryPoint:
           to: "https"                         # The target element
@@ -38,8 +36,6 @@ entryPoints:
   https:
     address: ":443"                           # Create the HTTPS entrypoint on port 443
     http:
-      middlewares:
-        - crowdsec-bouncer@file               # Force to use Crowdsec bouncer for every HTTPS Request
 serversTransport:
   insecureSkipVerify: true
 global:
