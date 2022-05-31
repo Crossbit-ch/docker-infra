@@ -21,7 +21,7 @@ services:
       
       # These labels can or should be changed
       - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
-      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file, crowdsec-bouncer@file"                               # Set enabled middlewares provided trough dynamic configuration
       - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`, `${TRAEFIK_DOMAIN}`)"      # Set FQDN(s) of website
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
