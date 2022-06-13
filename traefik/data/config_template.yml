@@ -19,6 +19,15 @@ http:
           - default-security-headers
           - gzip
 
+    # Recommended nextcloud middleware
+    # Use with traefik.http.routers.myRouter.middlewares: "default-nextcloud@file"
+    # Equivalent of traefik.http.routers.myRouter.middlewares: "nextcloud-security-headers@file,gzip@file"
+    default-nextcloud:
+      chain:
+        middlewares:
+          - nextcloud-security-headers
+          - gzip
+
     # Add automatically some security headers
     # Use with traefik.http.routers.myRouter.middlewares: "default-security-headers@file"
     default-security-headers:
@@ -28,10 +37,23 @@ http:
         forceSTSHeader: true                              # Add the Strict-Transport-Security header even when the connection is HTTP
         frameDeny: true                                   # X-Frame-Options=deny
         referrerPolicy: "strict-origin-when-cross-origin"
-        # sslRedirect: true                               # Allow only https requests, deprecated
         stsIncludeSubdomains: true                        # Add includeSubdomains to the Strict-Transport-Security header
         stsPreload: true                                  # Add preload flag appended to the Strict-Transport-Security header
         stsSeconds: 63072000                              # Set the max-age of the Strict-Transport-Security header (63072000 = 2 years)
+
+    # Special security headers for Nextcloud
+    # Use with traefik.http.routers.myRouter.middlewares: "nextcloud-security-headers@file"
+    nextcloud-security-headers:
+      headers:
+        browserXssFilter: true                            # X-XSS-Protection=1; mode=block
+        contentTypeNosniff: true                          # X-Content-Type-Options=nosniff
+        forceSTSHeader: true                              # Add the Strict-Transport-Security header even when the connection is HTTP
+        frameDeny: true                                   # X-Frame-Options=deny
+        referrerPolicy: "strict-origin-when-cross-origin"
+        stsIncludeSubdomains: true                        # Add includeSubdomains to the Strict-Transport-Security header
+        stsPreload: true                                  # Add preload flag appended to the Strict-Transport-Security header
+        stsSeconds: 63072000                              # Set the max-age of the Strict-Transport-Security header (63072000 = 2 years)
+        customFrameOptionsValue: "SAMEORIGIN"
 
     # Serve the error pages when the status is included inside the following ranges
     # Use with traefik.http.routers.myRouter.middlewares: "error-pages@file"
