@@ -81,8 +81,8 @@ services:
       - VIRTUAL_PROTO=http
       - VIRTUAL_PORT=9980
       - VIRTUAL_HOST=${COLLABORA_FQDN}
-      - username=qVeJlaE0c9f5ZByCYNOcC8170XlKYVhPe1jyWPFaAyVN6JKgF7PdZCDzBBaxAlivjozfjYyk5COPVhlTLGw1RQit1ZYz2rn     
-      - password=dwtahFsCS2AmTL8RLfz2OREF9u8ygjgfFJKNwNPyeGu7Rdsz99Q2lSPcS2puCfMrrxffof70w7zi4H411g9gtaO5VBgn3fT         
+      - username=${COLLABORA_USERNAME}
+      - password=${COLLABORA_PASSWORD}
       - "extra_params=--o:ssl.enable=false  --o:ssl.termination=true"
     cap_add:
       - MKNOD
