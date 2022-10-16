@@ -2,6 +2,17 @@
 # See https://doc.traefik.io/traefik/getting-started/configuration-overview/#the-dynamic-configuration
 
 http:
+  # Only use routers in dynamtic configuration file for external services. 
+  # Examples are: Non-docker services, Proxmox, TrueNAS, Switches, Routers, Firewalls...
+  routers:
+    routername:
+      entryPoints:
+        - "https"
+      rule: "Host(`host.example.com`)"
+      middlewares:
+        - default
+      tls: {}
+      service: example-service
   middlewares:
     # A basic authentification middleware, to protect the Traefik dashboard to anyone except myself
     # Use with traefik.http.routers.myRouter.middlewares: "traefikAuth@file"
@@ -95,6 +106,12 @@ http:
       loadBalancer:
         servers:
           - url: "https://www.usherbrooke.ca/error-pages/"
+    # Use in combination with example router for external services
+    example-service:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.X.X"
+        passHostHeader: true
     
 # See https://doc.traefik.io/traefik/https/tls/
 tls:
