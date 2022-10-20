@@ -18,7 +18,6 @@ services:
       - "INFOMANIAK_PROPAGATION_TIMEOUT=300"
     volumes:
       - "/etc/localtime:/etc/localtime:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./data/traefik.yml:/traefik.yml:ro"
       - "./data/acme.json:/acme.json"
       - "./data/acme-le.json:/acme-le.json"
@@ -44,6 +43,41 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[0].sans=*.crossbit.ch"                                             # Set crossbit sans cert(s)
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].main=local.crossbit.ch"                                         # Set local.crossbit main cert 
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].sans=*.local.crossbit.ch"                                       # Set local.crossbit sans cert(s)
+# Docker Socket Proxy - Security Enchanced Proxy for Docker Socket
+  socket-proxy:
+    container_name: socket-proxy
+    image: tecnativa/docker-socket-proxy
+    restart: always
+    networks:
+      - proxy
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - LOG_LEVEL=info # debug,info,notice,warning,err,crit,alert,emerg
+      - EVENTS=1
+      - PING=1
+      - VERSION=1
+      - AUTH=0
+      - SECRETS=0
+      - POST=0
+      - BUILD=0
+      - COMMIT=0
+      - CONFIGS=0
+      - CONTAINERS=1 # Traefik, portainer, etc.
+      - DISTRIBUTION=0
+      - EXEC=0
+      - IMAGES=0 # Portainer
+      - INFO=0 # Portainer
+      - NETWORKS=0 # Portainer
+      - NODES=0
+      - PLUGINS=0
+      - SERVICES=0 # Portainer
+      - SESSION=0
+      - SWARM=0
+      - SYSTEM=0
+      - TASKS=0 # Portainer
+      - VOLUMES=0 # Portainer
+
 networks:
   proxy:
     external: true

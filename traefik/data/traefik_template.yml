@@ -44,7 +44,7 @@ global:
 
 providers:
   docker:
-    endpoint: "unix:///var/run/docker.sock"   # Listen to the UNIX Docker socket
+    endpoint: "tcp://socket-proxy:2375"
     exposedByDefault: false                   # Only expose container that are explicitly enabled (using label traefik.enabled)
     network: "proxy"                          # Default network to use for connections to all containers.
   file:
