@@ -3,10 +3,14 @@ services:
   openvpn:
     cap_add:
      - NET_ADMIN
-    image: kylemanna/openvpn
+  # This image has been unmaintained for quite some time, this is why we build it ourself.
+  # image: kylemanna/openvpn
+    build:
+      dockerfile: ./Dockerfile
+      context: ./buildfiles
     container_name: openvpn
     ports:
-     - "1195:1195/udp"
-    restart: always
+     - "1194:1194/udp"
+    restart: unless-stopped
     volumes:
      - ./openvpn-data/conf:/etc/openvpn
