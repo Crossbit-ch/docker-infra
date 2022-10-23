@@ -11,12 +11,12 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Zurich
-      - SERVERURL= "${SERVERURL}"
+      - SERVERURL=${SERVERURL}
       - SERVERPORT=51820 
-      - PEERS=2 
-      - PEERDNS= "${PEERDNS}" 
-      - INTERNAL_SUBNET= "${INTERNAL_SUBNET}" 
-      - ALLOWEDIPS= "${ALLOWEDIPS}" 
+      - PEERS=5
+      - PEERDNS=${PEERDNS}
+      - INTERNAL_SUBNET=${INTERNAL_SUBNET} 
+      - ALLOWEDIPS=${ALLOWEDIPS}
     volumes:
       - ./config:/config
       - /lib/modules:/lib/modules
