@@ -29,7 +29,7 @@ services:
       - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
       - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
-      
+
       # These labels can or should be changed, service name label is missing due to special one for traefik
       - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=traefikAuth@file,default@file,internal-access@file"                # Set enabled middlewares provided trough dynamic configuration
       - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
@@ -43,7 +43,9 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[0].sans=*.crossbit.ch"                                             # Set crossbit sans cert(s)
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].main=local.crossbit.ch"                                         # Set local.crossbit main cert 
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.domains[1].sans=*.local.crossbit.ch"                                       # Set local.crossbit sans cert(s)
-# Docker Socket Proxy - Security Enchanced Proxy for Docker Socket
+
+  # Docker Socket Proxy - Security Enchanced Proxy for Docker Socket
+  # See: https://doc.traefik.io/traefik/providers/docker/#docker-api-access
   socket-proxy:
     container_name: socket-proxy
     image: tecnativa/docker-socket-proxy
@@ -51,7 +53,7 @@ services:
     networks:
       - proxy
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     environment:
       - LOG_LEVEL=info # debug,info,notice,warning,err,crit,alert,emerg
       - EVENTS=1
