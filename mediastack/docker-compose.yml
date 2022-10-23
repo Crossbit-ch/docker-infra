@@ -9,8 +9,8 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./jellyfin/config:/config
-      - ./radarr/data:/data/movies
-      - ./sonarr/data:/data/series
+      - ./transmission/downloads/complete/radarr/_hardlinked_renamed:/data/movies
+      - ./transmission/downloads/complete/sonarr/_hardlinked_renamed:/data/series
     networks:
       - proxy
       - default
@@ -59,7 +59,7 @@ services:
       - HOST_WHITELIST=
     volumes:
       - ./transmission/config/:/config
-      - ./transmission/:/downloads
+      - ./transmission/downloads/:/downloads
       - ./transmission/watch/:/watch
       - /tmp/transmission/:/tmp_downloads/
     networks: 
@@ -92,9 +92,8 @@ services:
       - PGID=1000
       - TZ=Europe/Zurich # Specify a timezone to use
     volumes:
-      - ./sonarr/data:/data # Location of all your media
       - ./sonarr/config:/config # Contains all relevant configuration files.
-      - ./transmission:/downloads
+      - ./transmission/downloads:/downloads
     networks:
       - proxy
       - default
@@ -122,9 +121,8 @@ services:
       - PGID=1000
       - TZ=Europe/Zurich
     volumes:
-      - ./radarr/data:/data
       - ./radarr/config:/config
-      - ./transmission:/downloads #optional
+      - ./transmission/downloads:/downloads
     networks:
       - proxy
       - default
@@ -154,7 +152,7 @@ services:
       - AUTO_UPDATE=true #optional
     volumes:
       - ./jackett/config:/config
-      - ./transmission:/downloads
+      - ./transmission/downloads:/downloads
     networks:
       - proxy
       - default
@@ -199,37 +197,6 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE_6}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_6}.${TRAEFIK_SUBDOMAIN_6}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
       - "traefik.http.routers.${TRAEFIK_SERVICE_6}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE_6}.loadbalancer.server.port=9696"                                                      # Set loadbalancing Port and corresponding Service name
-
-  bazarr:
-    image: linuxserver/bazarr:latest
-    container_name: bazarr_mediastack
-    environment:
-      - TZ=Europe/Zurich
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ./sonarr/data:/tv # Location of your TV Shows
-      - ./radarr/data:/movies # Location of your movies
-      - ./bazarr/config:/config # Bazarr data
-    networks:
-      - proxy
-      - default
-    restart: unless-stopped
-    labels:
-      # Default labels, no changes needed
-      - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network
-      - "traefik.enable=true"                                                                                                           # Enable Traefik on this Docker Container
-      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.entrypoints=https"                                                                   # Set entrypoint to HTTPS
-      - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls=true"                                                                            # Enable TLS, we're on HTTPS
-
-      # These labels can or should be changed
-      - "traefik.http.routers.${TRAEFIK_SERVICE_8}.service=${TRAEFIK_SERVICE_8}"                                                        # Set service name
-      - "traefik.http.routers.${TRAEFIK_SERVICE_8}.middlewares=default@file,internal-access@file"                                       # Set enabled middlewares provided trough dynamic configuration
-      - "traefik.http.routers.${TRAEFIK_SERVICE_8}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN_8}.${TRAEFIK_SUBDOMAIN_8}.${TRAEFIK_DOMAIN}`)"     # Set FQDN(s) of website
-      - "traefik.http.routers.${TRAEFIK_SERVICE_8}.tls.options=modern@file"                                                             # Set enabled TLS options provided trough dynamic configuration
-      - "traefik.http.services.${TRAEFIK_SERVICE_8}.loadbalancer.server.port=6767"                                                      # Set loadbalancing Port and corresponding Service name
-
-
 
 networks:
   proxy:

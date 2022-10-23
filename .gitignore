@@ -23,6 +23,6 @@ traefik/data/
 uptime-kuma/data/
 vscode/*
 wireguard/config/
-nextcloud/upgrade-23-to-24.logs
+nextcloud/*
 lancache/*
 homeassistant/*
