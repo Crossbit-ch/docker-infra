@@ -3,16 +3,26 @@
 
 http:
   # Only use routers in dynamtic configuration file for external services. 
-  # Examples are: Non-docker services, Proxmox, TrueNAS, Switches, Routers, Firewalls...
+  # Examples are: Non-docker services, Proxmox, TrueNAS, switches, routers, firewalls, external websites...
   routers:
-    routername:
+    # The following router is used as a reverse proxy
+    reverse-proxy-router-name:
       entryPoints:
         - "https"
       rule: "Host(`host.example.com`)"
       middlewares:
         - default
-      tls: {}
+      tls: {}                                           # Use "tls: {}" when using wildcard certs 
       service: example-service
+
+    # Here is an example for a redirect router
+    redirect-router-name:
+      middlewares:
+        - redirect-middleware
+      rule: "Host(`host.example.com`)"
+      service: noop@internal                            # Dedicated redirect service provided by Traefik, see: https://github.com/traefik/traefik/issues/7291
+      tls: {}                                           # Use "tls: {}" when using wildcard certs
+
   middlewares:
     # A basic authentification middleware, to protect the Traefik dashboard to anyone except myself
     # Use with traefik.http.routers.myRouter.middlewares: "traefikAuth@file"
@@ -99,6 +109,13 @@ http:
       forwardauth:
         address: http://bouncer-traefik:8080/api/v1/forwardAuth
         trustForwardHeader: true
+
+    # Use with redirect-router
+    redirect-middleware:
+      redirectRegex:
+        permanent: true
+        regex: "^https?://(www\\.)?example\\.com(/?.*)"
+        replacement: "https://example.foo.com${2}"
 
   services:
     # Error pages
