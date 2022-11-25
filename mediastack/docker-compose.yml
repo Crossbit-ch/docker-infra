@@ -14,10 +14,6 @@ services:
     networks:
       - proxy
       - default
-    ports:
-      - 8920:8920 #optional
-      - 7359:7359/udp #optional
-      - 1900:1900/udp #optional
     restart: unless-stopped
     labels:
       # Default labels, no changes needed
@@ -61,7 +57,6 @@ services:
       - ./transmission/config/:/config
       - ./transmission/downloads/:/downloads
       - ./transmission/watch/:/watch
-      - /tmp/transmission/:/tmp_downloads/
     networks: 
       - proxy
       - default
