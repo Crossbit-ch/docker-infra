@@ -2,3 +2,16 @@ filenames:
   - /var/log/traefik/*
 labels:
   type: traefik
+---
+filenames:
+  - /var/log/endlessh/current
+labels:
+  type: endlessh
+---
+filenames:
+  - /var/log/syslog
+labels:
+  type: linux
+---
+
+
