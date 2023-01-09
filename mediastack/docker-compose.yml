@@ -7,6 +7,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Zurich
+    group_add:
+      - "117"                                                                                                                           # Renderer group, change id according to your /etc/group "renderer"
     volumes:
       - ./jellyfin/config:/config
       - ./transmission/downloads/complete/radarr/_hardlinked_renamed:/data/movies
@@ -14,6 +16,9 @@ services:
     networks:
       - proxy
       - default
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128                                                                                         # VA-API hardware acceleration support (AMD + Intel)
+      - /dev/dri/card0:/dev/dri/card0                                                                                                   # VA-API hardware acceleration support (AMD + Intel)
     restart: unless-stopped
     labels:
       # Default labels, no changes needed

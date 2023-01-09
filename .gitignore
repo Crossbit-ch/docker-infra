@@ -26,3 +26,7 @@ wireguard/config/
 nextcloud/*
 lancache/*
 homeassistant/*
+paperless-ngx/*
+ddclient/*
+syncthing/*
+seafile/*
