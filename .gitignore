@@ -31,3 +31,5 @@ ddclient/*
 syncthing/*
 seafile/*
 scrutiny/*
+wordpress-leypetit/*
+.zfs

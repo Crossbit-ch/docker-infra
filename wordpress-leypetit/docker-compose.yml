@@ -1,0 +1,61 @@
+version: '3.1'
+
+services:
+  db:
+    image: mariadb:10.6.4-focal
+    command: '--default-authentication-plugin=mysql_native_password'
+    volumes:
+      - ./db_data:/var/lib/mysql
+    networks:
+      - backend
+    restart: unless-stopped
+    environment:
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_DATABASE=${MYSQL_DATABASE}"
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+    expose:
+      - 3306
+      - 33060
+  
+  wordpress:
+    image: wordpress:latest
+    volumes:
+      - ./wp_data:/var/www/html
+    networks:
+      - proxy
+      - backend
+    restart: unless-stopped
+    environment:
+      - "WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST}"
+      - "WORDPRESS_DB_USER=${WORDPRESS_DB_USER}"
+      - "WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}"
+      - "WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}"
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=wordpress-security-headers@file, crowdsec-bouncer@file, gzip@file" # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`, `${TRAEFIK_DOMAIN}`)"      # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
+
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.certresolver=le-leypetit"                                                  # Due to a Traefik limitation when trying to use multiple logins for one DNS challenge, we're falling back to Let's Encrypt http challenges
+
+  redis:
+    image: redis:alpine
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+  backend:
+    internal: true
+

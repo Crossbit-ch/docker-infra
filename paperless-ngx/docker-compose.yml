@@ -35,7 +35,7 @@ services:
       - ./data:/usr/src/paperless/data
       - ./media:/usr/src/paperless/media
       - ./export:/usr/src/paperless/export
-      - ./consume:/usr/src/paperless/consume
+      - /tank/samba/scans:/usr/src/paperless/consume
     env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379

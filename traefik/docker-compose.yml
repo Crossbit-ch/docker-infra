@@ -21,6 +21,7 @@ services:
       - "./data/traefik.yml:/traefik.yml:ro"
       - "./data/acme.json:/acme.json"
       - "./data/acme-le.json:/acme-le.json"
+      - "./data/acme-le-leypetit.json:/acme-le-leypetit.json"
       - "./data/config.yml:/config.yml"
       - "/var/log/traefik/:/log/"
     labels:

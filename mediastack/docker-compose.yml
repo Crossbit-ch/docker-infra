@@ -1,14 +1,14 @@
 version: "2.4"
 services:
+
   jellyfin:
     image: ghcr.io/linuxserver/jellyfin:latest
     container_name: jellyfin_mediastack
-    runtime: nvidia
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Zurich
-      - NVIDIA_VISIBLE_DEVICES=all
+      - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
     volumes:
       - ./jellyfin/config:/config
       - ./transmission/downloads/complete/radarr/_hardlinked_renamed:/data/movies
@@ -16,9 +16,9 @@ services:
     networks:
       - proxy
       - default
-  # devices:
-    # - /dev/dri
-    # - /dev/kfd
+    devices:
+      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri/renderD128:/dev/dri/renderD128
     restart: unless-stopped
     labels:
       # Default labels, no changes needed
@@ -47,7 +47,6 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE_7}.tls.options=intermediate@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE_7}.loadbalancer.server.port=8096"                                                      # Set loadbalancing Port and corresponding Service name
 
-
   transmission:
     image: ghcr.io/linuxserver/transmission:latest
     container_name: transmission_mediastack
@@ -55,9 +54,9 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Zurich
-      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
       - WHITELIST=
       - HOST_WHITELIST=
+      - TRANSMISSION_WEB_HOME=/config/flood-for-transmission/
     volumes:
       - ./transmission/config/:/config
       - ./transmission/downloads/:/downloads
@@ -97,7 +96,6 @@ services:
     networks:
       - proxy
       - default
-    restart: unless-stopped
     labels:
       # Default labels, no changes needed
       - "traefik.docker.network=proxy"                                                                                                  # Set Traefik network

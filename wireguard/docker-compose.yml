@@ -1,27 +1,49 @@
----
-version: "2.1"
+version: "3.8"
 services:
-  wireguard:
-    image: ghcr.io/linuxserver/wireguard
-    container_name: wireguard
+  wg-easy:
+    image: weejewel/wg-easy
+    container_name: wg-easy
+    volumes:
+      - ./config:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+      # - "51821:51821/tcp" # Webinterface is behind Traefik reverse proxy
+    networks:
+      - proxy
+    environment:
+      # ⚠️ Required:
+      # Change this to your host's public address
+      - WG_HOST=${WG_HOST}
+      # Optional:
+      - PASSWORD=${WG_PASSWORD}
+      - WG_PORT=${WG_PORT}
+      - WG_DEFAULT_ADDRESS=${WG_DEFAULT_ADDRESS}
+      - WG_DEFAULT_DNS=${WG_DEFAULT_DNS}
+      - WG_ALLOWED_IPS=${WG_ALLOWED_IPS}
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Zurich
-      - SERVERURL=${SERVERURL}
-      - SERVERPORT=51820 
-      - PEERS=5
-      - PEERDNS=${PEERDNS}
-      - INTERNAL_SUBNET=${INTERNAL_SUBNET} 
-      - ALLOWEDIPS=${ALLOWEDIPS}
-    volumes:
-      - ./config:/config
-      - /lib/modules:/lib/modules
-    ports:
-      - 51820:51820/udp
     sysctls:
+      - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
-    restart: unless-stopped
+
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file,internal-access@file"                                 # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=51821"                                               # Set loadbalancing Port and corresponding Service name
+
+networks:
+  proxy:
+    external: true
+
+

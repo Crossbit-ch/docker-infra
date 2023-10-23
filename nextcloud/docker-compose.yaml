@@ -3,12 +3,10 @@ version: "3"
 services:
   db:
     image: mariadb:10.5
-    labels:
-      com.centurylinklabs.watchtower.enable: "false"
     restart: always
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     volumes:
-      - /tank/docker/nextcloud/db_data:/var/lib/mysql
+      - /tank/docker/nextcloud/db_data/data:/var/lib/mysql
       - /tank/docker/nextcloud/db_config:/etc/mysql/conf.d
     env_file:
       - db.env
@@ -19,14 +17,12 @@ services:
 
   app:
     image: "nextcloud:${TAG}"
-    labels:
-      com.centurylinklabs.watchtower.enable: "false"
     restart: always
     networks:
       - proxy
       - default
     volumes:
-      - /tank/docker/nextcloud/nextcloud_data:/var/www/html
+      - /tank/docker/nextcloud/nextcloud_data/data:/var/www/html
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
@@ -60,11 +56,9 @@ services:
       - "traefik.http.middlewares.${TRAEFIK_SERVICE}.redirectregex.permanent=true"
   cron:
     image: "nextcloud:${TAG}"
-    labels:
-      com.centurylinklabs.watchtower.enable: "false"
     restart: always
     volumes:
-      - /tank/docker/nextcloud/nextcloud_data:/var/www/html
+      - /tank/docker/nextcloud/nextcloud_data/data:/var/www/html
     entrypoint: /cron.sh
     depends_on:
       - db
