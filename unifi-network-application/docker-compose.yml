@@ -1,0 +1,66 @@
+---
+version: "2.1"
+services:
+  unifi-network-application:
+    image: lscr.io/linuxserver/unifi-network-application:latest
+    container_name: unifi-network-application
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASS=${MONGO_PASS}
+      - MONGO_HOST=unifi-db
+      - MONGO_PORT=27017
+      - MONGO_DBNAME=unifi
+      - MEM_LIMIT=1024      # Optional
+      - MEM_STARTUP=1024    # Optional
+    volumes:
+      - ./config:/config
+    ports:
+    # - 8443:8443           # Web HTTPS GUI
+    # - 3478:3478/udp       # STUN
+    # - 10001:10001/udp     # Device discovery
+      - 8080:8080           # Device Communication
+    # - 1900:1900/udp       # Application discovery
+    # - 8843:8843           # Web HTTPS redirect
+    # - 8880:8880           # Web HTTP GUI
+    # - 6789:6789           # UniFi mobile speedtests
+    # - 5514:5514/udp       # Remote Syslog
+    restart: unless-stopped
+    networks:
+      - proxy
+      - backend
+
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file,internal-access@file"                                 # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=8443"                                                # Set loadbalancing Port and corresponding Service name
+
+      # Additional labels to communicate via https internally
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.scheme=https"
+
+  unifi-db:
+    image: docker.io/mongo:7
+    container_name: unifi-db
+    volumes:
+      - ./mongodata:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped
+    networks:
+      - backend
+
+networks:
+  proxy:
+    external: true
+  backend:
+    external: false
