@@ -42,6 +42,12 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=intermediate@file"                                                 # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=51821"                                               # Set loadbalancing Port and corresponding Service name
 
+      # External, via Authentik forward-auth
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.service=${TRAEFIK_SERVICE}"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.middlewares=default@file,authentik@file"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.tls.options=intermediate@file"
+
 networks:
   proxy:
     external: true

@@ -11,6 +11,7 @@ services:
       - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
     volumes:
       - ./jellyfin/config:/config
+      - /tmp/jellyfin_transcodes:/config/data/transcodes
       - ./transmission/downloads/complete/radarr/_hardlinked_renamed:/data/movies
       - ./transmission/downloads/complete/sonarr/_hardlinked_renamed:/data/series
     networks:

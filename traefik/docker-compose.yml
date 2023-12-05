@@ -31,11 +31,16 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
 
-      # These labels can or should be changed, service name label is missing due to special one for traefik
+      # Internal
       - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=traefikAuth@file,default@file,internal-access@file"                # Set enabled middlewares provided trough dynamic configuration
       - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=modern@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=80"                                                  # Set loadbalancing Port and corresponding Service name
+
+      # External, via Authentik forward-auth
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.middlewares=default@file,authentik@file"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.tls.options=modern@file"
 
       # Specific Traefik container labels, do not copy to other containers
       - "traefik.http.routers.${TRAEFIK_SERVICE}.service=api@internal"                                                          # Special service name for traefik
@@ -56,7 +61,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     environment:
-      - LOG_LEVEL=info # debug,info,notice,warning,err,crit,alert,emerg
+      - LOG_LEVEL=warning # debug,info,notice,warning,err,crit,alert,emerg
       - EVENTS=1
       - PING=1
       - VERSION=1

@@ -1,0 +1,130 @@
+---
+version: "3.4"
+
+services:
+  postgresql:
+    image: docker.io/library/postgres:12-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_DB: ${PG_DB:-authentik}
+    env_file:
+      - .env
+    networks:
+      - backend
+  redis:
+    image: docker.io/library/redis:alpine
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - ./redis:/data
+    networks:
+      - backend
+  authentik:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2023.10.4}
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    volumes:
+      - ./media:/media
+      - ./custom-templates:/templates
+    env_file:
+      - .env
+  # ports:
+    # - "${COMPOSE_PORT_HTTP:-9000}:9000"
+    # - "${COMPOSE_PORT_HTTPS:-9443}:9443"
+    depends_on:
+      - postgresql
+      - redis
+
+    labels:
+      # Default labels, no changes needed
+      - "traefik.docker.network=proxy"                                                                                          # Set Traefik network
+      - "traefik.enable=true"                                                                                                   # Enable Traefik on this Docker Container
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
+      
+      # These labels can or should be changed
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file"                                                      # Set enabled middlewares provided trough dynamic configuration
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"                           # Set FQDN(s) of website
+      - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=modern@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
+      - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=9000"                                                # Set loadbalancing Port and corresponding Service name
+    networks:
+      - backend
+      - proxy
+
+  worker:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2023.10.4}
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    # `user: root` and the docker socket volume are optional.
+    # See more for the docker socket integration here:
+    # https://goauthentik.io/docs/outposts/integrations/docker
+    # Removing `user: root` also prevents the worker from fixing the permissions
+    # on the mounted folders, so when removing this make sure the folders have the correct UID/GID
+    # (1000:1000 by default)
+ 
+  # user: root
+    volumes:
+    # - /var/run/docker.sock:/var/run/docker.sock # We do not have any external Outposts, this can be disabled.
+      - ./media:/media
+      - ./certs:/certs
+      - ./custom-templates:/templates
+    env_file:
+      - .env
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - backend
+
+  whoami-test:
+    image: traefik/whoami
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    environment:
+      - TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.whoami-test-rtr.rule=Host(`whoami.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.whoami-test-rtr.entrypoints=https"
+      - "traefik.http.routers.whoami-test-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.whoami-test-rtr.middlewares=authentik@file"
+
+networks:
+  proxy:
+    external: true
+  backend:
+    external: false

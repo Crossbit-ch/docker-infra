@@ -14,12 +14,18 @@ services:
       - "traefik.http.routers.${TRAEFIK_SERVICE}.entrypoints=https"                                                             # Set entrypoint to HTTPS
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls=true"                                                                      # Enable TLS, we're on HTTPS
       
-      # These labels can or should be changed
+      # Internal
       - "traefik.http.routers.${TRAEFIK_SERVICE}.service=${TRAEFIK_SERVICE}"                                                    # Set service name
       - "traefik.http.routers.${TRAEFIK_SERVICE}.middlewares=default@file,internal-access@file"                                 # Set enabled middlewares provided trough dynamic configuration
       - "traefik.http.routers.${TRAEFIK_SERVICE}.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_SUBDOMAIN}.${TRAEFIK_DOMAIN}`)"   # Set FQDN(s) of website
       - "traefik.http.routers.${TRAEFIK_SERVICE}.tls.options=modern@file"                                                       # Set enabled TLS options provided trough dynamic configuration 
       - "traefik.http.services.${TRAEFIK_SERVICE}.loadbalancer.server.port=8000"                                                # Set loadbalancing Port and corresponding Service name
+
+      # External, via Authentik forward-auth
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.service=${TRAEFIK_SERVICE}"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.middlewares=default@file,authentik@file"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.rule=Host(`${TRAEFIK_SUBSUBDOMAIN}.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.${TRAEFIK_SERVICE}-fwauth.tls.options=modern@file"
      
 networks:
   proxy:
